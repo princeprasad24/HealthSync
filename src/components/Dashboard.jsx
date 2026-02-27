@@ -1,4 +1,3 @@
-// src/components/Dashboard.jsx
 import React, { useState, useEffect } from "react";
 import Sidebar from "./sideBar";
 import DailyGoalCard from "./DailyGoalCard";
@@ -9,36 +8,47 @@ import { ref, onValue } from "firebase/database";
 import { Activity, Footprints, Droplets, Thermometer, Zap } from "lucide-react";
 
 const Dashboard = () => {
-  // 1. State Management
   const [activeTab, setActiveTab] = useState("Home");
   const [isNotificationEnabled, setNotificationEnabled] = useState(false);
   const [alerts, setAlerts] = useState([]);
+  
   const [metrics, setMetrics] = useState({
-    heartRate: { current: 0, target: 100, trend: [70, 72, 75, 74, 78] },
-    spo2: { current: 0, target: 100, trend: [98, 99, 97, 98, 98] },
-    steps: { current: 0, target: 10000, trend: [1000, 2000, 3500, 4000, 5000] },
-    gsr: { current: 0, target: 1, trend: [0.4, 0.5, 0.45, 0.6, 0.5] },
-    temperature: { current: 0, target: 37.5, trend: [36.5, 36.6, 36.7, 36.6, 36.8] },
+    heartRate: { current: 0, target: 100, trend: [] },
+    spo2: { current: 0, target: 100, trend: [] },
+    steps: { current: 0, target: 10000, trend: [] },
+    gsr: { current: 0, target: 1, trend: [] },
+    temperature: { current: 0, target: 37.5, trend: [] },
     isFallen: false
   });
 
-  // 2. Real-time Firebase Listener
   useEffect(() => {
     const metricsRef = ref(database, "metrics");
+    console.log("Setting up Firebase listener for metrics...");
+    
     const unsubscribe = onValue(metricsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        setMetrics(prev => ({ ...prev, ...data }));
+        
+        setMetrics({
+          heartRate: data.heartRate || { current: 0, target: 100, trend: [] },
+          spo2: data.spo2 || { current: 0, target: 100, trend: [] },
+          steps: data.steps || { current: 0, target: 10000, trend: [] },
+          gsr: data.gsr || { current: 0, target: 1, trend: [] },
+          temperature: data.temperature || { current: 0, target: 37.5, trend: [] },
+          isFallen: data.isFallen ?? false
+        });
+
+        console.log("Firebase Data Updated:", data);
       }
+    }, (error) => {
+      console.error("Firebase Read Error:", error);
     });
 
-    // Mock FCM Setup Status for UI
     setNotificationEnabled(true); 
-
     return () => unsubscribe();
   }, []);
 
-  // 3. Alert Generation Logic
+  // Alert logic triggers whenever metrics update
   useEffect(() => {
     const newAlerts = [];
     if (metrics.heartRate.current > 120) {
@@ -61,8 +71,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
-      
-      
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="flex-1 p-4 md:p-8">
@@ -71,10 +79,8 @@ const Dashboard = () => {
           <p className="text-gray-500">Here is your health overview for today.</p>
         </header>
 
-        {/* Dynamic Content based on Sidebar */}
         {activeTab === "Home" && (
           <>
-            {/* Daily Goal Cards Grid */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
               <DailyGoalCard
                 title="Steps"
@@ -131,7 +137,6 @@ const Dashboard = () => {
               <div>
                 <AlertSection alerts={alerts} isNotificationEnabled={isNotificationEnabled} />
                 
-                {/* Fall Detection Quick Status */}
                 <div className={`mt-6 p-6 rounded-2xl border-2 transition-all ${metrics.isFallen ? 'bg-red-600 border-red-600 text-white animate-bounce' : 'bg-white border-gray-100 text-gray-400'}`}>
                    <p className="text-sm font-bold uppercase mb-1">Safety Status</p>
                    <p className="text-2xl font-black">{metrics.isFallen ? "FALL DETECTED!" : "System Normal"}</p>

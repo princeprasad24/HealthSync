@@ -1,14 +1,14 @@
-// src/components/AlertSection.jsx
 import React from "react";
 import { 
-  BellAlertIcon, 
-  BellSlashIcon, 
-  ExclamationTriangleIcon, 
-  ShieldCheckIcon,
-  CloudIcon
-} from "@heroicons/react/24/outline"; // or use lucide equivalents like Bell, BellOff, AlertTriangle, ShieldCheck, Cloud
+  Bell, 
+  BellOff, 
+  AlertTriangle, 
+  ShieldCheck, 
+  Cloud 
+} from "lucide-react";
 
-const AlertSection = ({ alerts, isNotificationEnabled }) => {
+const AlertSection = ({ alerts = [], isNotificationEnabled }) => {
+  // Helper to determine styles based on alert severity
   const getSeverityStyles = (severity) => {
     switch (severity) {
       case "high":
@@ -22,35 +22,36 @@ const AlertSection = ({ alerts, isNotificationEnabled }) => {
   };
 
   return (
-    <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6 mt-8">
-      {/* Header with FCM Status */}
+    <div className="bg-white shadow-sm border border-gray-100 rounded-2xl p-6">
+      {/* Header with Connection Status */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            System Alerts
-            {alerts.length > 0 && (
-              <span className="flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-              </span>
-            )}
-          </h2>
-          <p className="text-sm text-gray-400">Real-time health monitoring notifications</p>
+          <h2 className="text-xl font-bold text-gray-800">Health Alerts</h2>
+          <div className="flex items-center gap-2 mt-1">
+            <Cloud className="h-4 w-4 text-green-500" />
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">
+              Firebase Real-time Connected
+            </span>
+          </div>
         </div>
-
-        {/* Firebase Cloud Messaging Status Indicator */}
-        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all
-          ${isNotificationEnabled ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-400 border-gray-200"}`}>
-          <CloudIcon className="h-4 w-4" />
-          <span>FCM Cloud: {isNotificationEnabled ? "Active" : "Disabled"}</span>
+        
+        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${
+          isNotificationEnabled 
+            ? "bg-green-50 border-green-100 text-green-700" 
+            : "bg-gray-50 border-gray-100 text-gray-400"
+        }`}>
+          {isNotificationEnabled ? <Bell size={16} /> : <BellOff size={16} />}
+          <span className="text-xs font-bold uppercase">
+            {isNotificationEnabled ? "Alerts Active" : "Alerts Muted"}
+          </span>
         </div>
       </div>
 
-      {/* Alerts Content */}
+      {/* Alerts List */}
       {alerts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center border-2 border-dashed border-gray-100 rounded-xl">
-          <div className="bg-green-50 p-3 rounded-full mb-3">
-            <ShieldCheckIcon className="h-8 w-8 text-green-500" />
+        <div className="flex flex-col items-center justify-center py-12 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
+          <div className="bg-green-100 p-3 rounded-full mb-3">
+            <ShieldCheck className="h-8 w-8 text-green-500" />
           </div>
           <p className="text-gray-500 font-medium">All Vitals Normal</p>
           <p className="text-xs text-gray-400">No critical issues detected at this time.</p>
@@ -64,9 +65,9 @@ const AlertSection = ({ alerts, isNotificationEnabled }) => {
             >
               <div className="mt-0.5">
                 {alert.severity === "high" ? (
-                  <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />
+                  <AlertTriangle className="h-6 w-6 text-red-500" />
                 ) : (
-                  <BellAlertIcon className="h-6 w-6" />
+                  <Bell className="h-6 w-6" />
                 )}
               </div>
               <div className="flex-1">
@@ -76,12 +77,21 @@ const AlertSection = ({ alerts, isNotificationEnabled }) => {
                     {alert.severity} Priority
                   </span>
                 </div>
-                <p className="text-sm opacity-90 leading-tight mt-0.5">{alert.message}</p>
+                <p className="text-sm opacity-90 leading-tight mt-0.5">
+                  {alert.message}
+                </p>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      {/* Footer Info */}
+      <div className="mt-6 pt-4 border-t border-gray-50">
+        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest text-center">
+          Automatic Fall Detection & Vital Monitoring System
+        </p>
+      </div>
     </div>
   );
 };

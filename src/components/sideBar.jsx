@@ -1,5 +1,5 @@
-// src/components/Sidebar.jsx
-import React, { useState } from "react";
+
+import React from "react";
 import {
   HomeIcon,
   HeartIcon,
@@ -10,7 +10,7 @@ import {
 } from "@heroicons/react/24/outline";
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
-  // Navigation items mapped to your specific sensors/features
+  
   const menuItems = [
     { id: "Home", name: "Overview", icon: <HomeIcon className="h-5 w-5" /> },
     { id: "Fitness", name: "Fitness (Steps)", icon: <FireIcon className="h-5 w-5" /> },

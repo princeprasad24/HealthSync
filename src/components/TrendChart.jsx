@@ -138,7 +138,7 @@ const TrendChart = ({ metricsData = {} }) => {
           <p className="text-sm text-gray-500">Visualizing your vitals over time</p>
         </div>
         
-        <div className="flex bg-gray-100 p-1 rounded-xl">
+        {/* <div className="flex bg-gray-100 p-1 rounded-xl">
           {["Daily", "Weekly", "Monthly"].map((t) => (
             <button
               key={t}
@@ -150,7 +150,7 @@ const TrendChart = ({ metricsData = {} }) => {
               {t}
             </button>
           ))}
-        </div>
+        </div> */}
       </div>
 
       {/* Dataset Filter Toggles */}

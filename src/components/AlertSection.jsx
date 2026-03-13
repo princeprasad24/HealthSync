@@ -10,14 +10,14 @@ import {
   X
 } from "lucide-react";
 
-const AlertSection = ({ metrics, thresholds, isNotificationEnabled, onDismissAll }) => {
+const AlertSection = ({ metrics, thresholds, isNotificationEnabled }) => {
   
-  // Logic to generate dynamic alerts based on your provided ranges
+  // Generate all alerts dynamically
   const generateLiveAlerts = () => {
     const activeAlerts = [];
     const { heartRate, spo2, temperature, gsr, isFallen } = metrics;
 
-    // 1. FALL DETECTION (Highest Priority)
+    // --- 1. FALL DETECTION (Highest Priority) ---
     if (isFallen) {
       activeAlerts.push({
         id: "fall",
@@ -28,38 +28,118 @@ const AlertSection = ({ metrics, thresholds, isNotificationEnabled, onDismissAll
       });
     }
 
-    // 2. HEART RATE RANGES
-    if (heartRate.current > 200) {
-      activeAlerts.push({ id: "hr-crit", type: "Heart Rate", message: "Dangerously high BPM (>200).", severity: "high", icon: <Activity /> });
-    } else if (heartRate.current > thresholds.hrMax) {
-      activeAlerts.push({ id: "hr-warn", type: "Heart Rate", message: "Pulse above set limit.", severity: "medium", icon: <Activity /> });
+    if (heartRate.current > 0) {
+    if (heartRate.current > thresholds.hrMax) {
+      activeAlerts.push({ id: "h-hr", type: "Heart Rate", message: `High Pulse (> ${thresholds.hrMax} BPM)`, severity: "high" });
+    } else if (heartRate.current < thresholds.hrMin) {
+      activeAlerts.push({ id: "l-hr", type: "Heart Rate", message: `Low Pulse (< ${thresholds.hrMin} BPM)`, severity: "high" });
+    }
+  }
+
+  if (temperature.current > 0) {
+    if (temperature.current > thresholds.tempMax) {
+      activeAlerts.push({ id: "h-temp", type: "Temperature", message: "Fever Detected", severity: "high" });
+    } else if (temperature.current < thresholds.tempMin) {
+      activeAlerts.push({ id: "l-temp", type: "Temperature", message: "Low Body Temp Detected", severity: "high" });
+    }
+  }
+
+  if (spo2.current > 0 && spo2.current < thresholds.spo2Min) {
+    activeAlerts.push({ id: "l-spo2", type: "Oxygen", message: `Critical SpO2: ${spo2.current}%`, severity: "high" });
+  }
+
+  // GSR: Stress Levels
+  if (gsr.current >= 1500) {
+    activeAlerts.push({ id: "gsr", type: "Stress", message: "High Stress detected", severity: "medium" });
+  }
+
+    // --- 2. HEART RATE ALERTS ---
+    if (heartRate.current > 0) {
+      if (heartRate.current > 200) {
+        activeAlerts.push({
+          id: "hr-crit-high",
+          type: "Heart Rate",
+          message: "CRITICAL: Dangerously High BPM (>200)!",
+          severity: "high",
+          icon: <Activity className="text-red-600" />
+        });
+      } else if (heartRate.current > thresholds.hrMax) {
+        activeAlerts.push({
+          id: "hr-high",
+          type: "Heart Rate",
+          message: "High Pulse detected.",
+          severity: "medium",
+          icon: <Activity />
+        });
+      } else if (heartRate.current < 40) {
+        activeAlerts.push({
+          id: "hr-crit-low",
+          type: "Heart Rate",
+          message: "CRITICAL: Dangerously Low BPM (<40)!",
+          severity: "high",
+          icon: <Activity className="text-blue-600" />
+        });
+      } else if (heartRate.current < 55) {
+        activeAlerts.push({
+          id: "hr-low",
+          type: "Heart Rate",
+          message: "Low Pulse (Bradycardia) detected.",
+          severity: "medium",
+          icon: <Activity />
+        });
+      }
     }
 
-    // 3. GSR STRESS RANGES (Based on your new data)
+    // --- 3. TEMPERATURE ALERTS ---
+    if (temperature.current > 0) {
+      if (temperature.current > thresholds.tempMax) {
+        activeAlerts.push({
+          id: "temp-high",
+          type: "Temperature",
+          message: "Fever detected (High Temp).",
+          severity: "high",
+          icon: <Thermometer className="text-red-600" />
+        });
+      } else if (temperature.current < 35.0) {
+        activeAlerts.push({
+          id: "temp-low",
+          type: "Temperature",
+          message: "CRITICAL: Low Body Temp (Hypothermia)!",
+          severity: "high",
+          icon: <Thermometer className="text-blue-600" />
+        });
+      }
+    }
+
+    // --- 4. SPO2 ALERTS ---
+    if (spo2.current > 0 && spo2.current < thresholds.spo2Min) {
+      const severity = spo2.current < 85 ? "high" : "medium";
+      activeAlerts.push({
+        id: "spo2-low",
+        type: "Oxygen",
+        message: `Low SpO2 detected: ${spo2.current}%.`,
+        severity,
+        icon: <Zap />
+      });
+    }
+
+    // --- 5. GSR STRESS ALERTS ---
     if (gsr.current >= 1500) {
-      activeAlerts.push({ 
-        id: "gsr-high", 
-        type: "Stress Level", 
-        message: "High stress / sweating detected.", 
-        severity: "high", 
-        icon: <Droplets className="text-orange-600" /> 
+      activeAlerts.push({
+        id: "gsr-high",
+        type: "Stress Level",
+        message: "High stress / sweating detected.",
+        severity: "high",
+        icon: <Droplets className="text-orange-600" />
       });
     } else if (gsr.current >= 500 && gsr.current < 1500) {
-      activeAlerts.push({ 
-        id: "gsr-med", 
-        type: "Stress Level", 
-        message: "Slight stress detected.", 
-        severity: "medium", 
-        icon: <Droplets className="text-yellow-600" /> 
+      activeAlerts.push({
+        id: "gsr-med",
+        type: "Stress Level",
+        message: "Slight stress detected.",
+        severity: "medium",
+        icon: <Droplets className="text-yellow-600" />
       });
-    }
-
-    // 4. SPO2 & TEMP
-    if (spo2.current > 0 && spo2.current < thresholds.spo2Min) {
-      activeAlerts.push({ id: "spo2", type: "Oxygen", message: `SpO2 below ${thresholds.spo2Min}%.`, severity: "medium", icon: <Zap /> });
-    }
-    if (temperature.current > thresholds.tempMax) {
-      activeAlerts.push({ id: "temp", type: "Temperature", message: "Fever threshold exceeded.", severity: "high", icon: <Thermometer /> });
     }
 
     return activeAlerts;

@@ -11,7 +11,7 @@ import {
   Filler,
 } from "chart.js";
 
-// Register ChartJS components
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -26,16 +26,16 @@ const DailyGoalCard = ({
   title,
   currentValue,
   targetValue,
-  trendData = [], // Default to empty array to prevent map errors
+  trendData = [], 
   color,
   unit,
   icon: Icon,
   chartType = "line",
 }) => {
-  // Calculate percentage for the progress bar, capped at 100%
+  
   const percentage = targetValue > 0 ? Math.min((currentValue / targetValue) * 100, 100) : 0;
 
-  // Prepare data for the mini sparkline chart
+  
   const chartData = {
     labels: trendData.map((_, idx) => idx + 1),
     datasets: [

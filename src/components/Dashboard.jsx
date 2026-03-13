@@ -27,7 +27,8 @@ const Dashboard = () => {
   const [thresholds, setThresholds] = useState({
     hrMax: 120,
     tempMax: 38,
-    spo2Min: 94
+    spo2Min: 94,
+    gsrMax: 2095
   });
 
  
@@ -227,7 +228,7 @@ const Dashboard = () => {
               <DailyGoalCard
                 title="GSR"
                 currentValue={metrics.gsr.current}
-                targetValue={4095}
+                targetValue={thresholds.gsrMax}
                 trendData={metrics.gsr.trend}
                 color="#f59e0b"
                 icon={Droplets}

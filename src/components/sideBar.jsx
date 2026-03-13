@@ -13,10 +13,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   
   const menuItems = [
     { id: "Home", name: "Overview", icon: <HomeIcon className="h-5 w-5" /> },
-    { id: "Fitness", name: "Fitness (Steps)", icon: <FireIcon className="h-5 w-5" /> },
-    { id: "Wellness", name: "Vitals (Heart/SpO₂)", icon: <HeartIcon className="h-5 w-5" /> },
-    { id: "Stress", name: "Stress (GSR)", icon: <BeakerIcon className="h-5 w-5" /> },
-    { id: "Safety", name: "Safety (Fall)", icon: <ShieldCheckIcon className="h-5 w-5" /> },
+    // { id: "Fitness", name: "Fitness (Steps)", icon: <FireIcon className="h-5 w-5" /> },
+    // { id: "Wellness", name: "Vitals (Heart/SpO₂)", icon: <HeartIcon className="h-5 w-5" /> },
+    // { id: "Stress", name: "Stress (GSR)", icon: <BeakerIcon className="h-5 w-5" /> },
+    // { id: "Safety", name: "Safety (Fall)", icon: <ShieldCheckIcon className="h-5 w-5" /> },
   ];
 
   return (
@@ -49,10 +49,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             {item.name}
           </button>
         ))}
-      </nav>
 
-      {/* Settings & User at Bottom */}
-      <div className="p-4 border-t border-gray-100">
+        <div className="p-4 border-t border-gray-100">
         <button 
           onClick={() => setActiveTab("Settings")}
           className="flex items-center gap-3 p-3 rounded-xl w-full text-gray-500 hover:bg-gray-50 transition-all"
@@ -61,6 +59,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
           <span>Settings</span>
         </button>
       </div>
+      </nav>
+
+      {/* Settings & User at Bottom */}
+      
     </aside>
   );
 };

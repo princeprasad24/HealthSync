@@ -9,63 +9,97 @@ import { Activity, Footprints, Droplets, Thermometer, Zap } from "lucide-react";
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("Home");
-  const [isNotificationEnabled, setNotificationEnabled] = useState(false);
+  const [isNotificationEnabled, setNotificationEnabled] = useState(true);
   const [alerts, setAlerts] = useState([]);
   
   const [metrics, setMetrics] = useState({
     heartRate: { current: 0, target: 100, trend: [] },
     spo2: { current: 0, target: 100, trend: [] },
     steps: { current: 0, target: 10000, trend: [] },
-    gsr: { current: 0, target: 1, trend: [] },
+    gsr: { current: 0, target: 2000, trend: [] }, // Adjusted target for raw GSR range
     temperature: { current: 0, target: 37.5, trend: [] },
     isFallen: false
   });
 
+  // Helper function to update trend arrays (stores last 20 readings)
+  const updateTrend = (trendArray, newValue) => {
+    const newTrend = [...trendArray, newValue];
+    return newTrend.slice(-20); // Keep only the latest 20 points for the sparklines
+  };
+
   useEffect(() => {
-    const metricsRef = ref(database, "metrics");
-    console.log("Setting up Firebase listener for metrics...");
-    
-    const unsubscribe = onValue(metricsRef, (snapshot) => {
+    const rootRef = ref(database, "/");
+    console.log("Listening to Firebase for real-time updates...");
+
+    const unsubscribe = onValue(rootRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val();
-        
-        setMetrics({
-          heartRate: data.heartRate || { current: 0, target: 100, trend: [] },
-          spo2: data.spo2 || { current: 0, target: 100, trend: [] },
-          steps: data.steps || { current: 0, target: 10000, trend: [] },
-          gsr: data.gsr || { current: 0, target: 1, trend: [] },
-          temperature: data.temperature || { current: 0, target: 37.5, trend: [] },
-          isFallen: data.isFallen ?? false
-        });
+        const health = data.healthData || {};
+        const sensors = data.sensorData || {};
 
-        console.log("Firebase Data Updated:", data);
+        setMetrics((prev) => {
+          // Logic for valid temperature (ignoring -127 error state)
+          const newTemp = sensors.temperature && sensors.temperature !== -127 
+            ? sensors.temperature 
+            : prev.temperature.current;
+
+          return {
+            ...prev,
+            heartRate: {
+              ...prev.heartRate,
+              current: health.heartRate ?? prev.heartRate.current,
+              trend: health.heartRate ? updateTrend(prev.heartRate.trend, health.heartRate) : prev.heartRate.trend
+            },
+            spo2: {
+              ...prev.spo2,
+              current: health.spo2 ?? prev.spo2.current,
+              trend: health.spo2 ? updateTrend(prev.spo2.trend, health.spo2) : prev.spo2.trend
+            },
+            steps: {
+              ...prev.steps,
+              current: sensors.steps ?? prev.steps.current,
+              trend: sensors.steps ? updateTrend(prev.steps.trend, sensors.steps) : prev.steps.trend
+            },
+            gsr: {
+              ...prev.gsr,
+              current: sensors.gsr ?? prev.gsr.current,
+              trend: sensors.gsr ? updateTrend(prev.gsr.trend, sensors.gsr) : prev.gsr.trend
+            },
+            temperature: {
+              ...prev.temperature,
+              current: newTemp,
+              trend: newTemp !== prev.temperature.current ? updateTrend(prev.temperature.trend, newTemp) : prev.temperature.trend
+            },
+            isFallen: health.isFallen || sensors.isFallen || false,
+          };
+        });
       }
-    }, (error) => {
-      console.error("Firebase Read Error:", error);
     });
 
-    setNotificationEnabled(true); 
     return () => unsubscribe();
   }, []);
 
-  // Alert logic triggers whenever metrics update
+  // Centralized Alert Logic
   useEffect(() => {
     const newAlerts = [];
-    if (metrics.heartRate.current > 120) {
-      newAlerts.push({ id: 1, type: "Heart Rate", message: "High heart rate detected!", severity: "high" });
+    const { heartRate, spo2, temperature, isFallen, gsr } = metrics;
+
+    if (isFallen) {
+      newAlerts.push({ id: 1, type: "Emergency", message: "Fall Detected! Immediate attention required.", severity: "high" });
     }
-    if (metrics.spo2.current < 95) {
-      newAlerts.push({ id: 2, type: "SpO₂", message: "Oxygen level low!", severity: "medium" });
+    if (heartRate.current > 120) {
+      newAlerts.push({ id: 2, type: "Heart Rate", message: "High heart rate (Tachycardia) detected.", severity: "high" });
     }
-    if (metrics.temperature.current > 38) {
-      newAlerts.push({ id: 3, type: "Temperature", message: "Fever detected!", severity: "high" });
+    if (spo2.current > 0 && spo2.current < 94) {
+      newAlerts.push({ id: 3, type: "Oxygen", message: "SpO2 levels dropped below normal.", severity: "medium" });
     }
-    if (metrics.isFallen) {
-      newAlerts.push({ id: 4, type: "Safety", message: "Emergency: Fall Detected!", severity: "high" });
+    if (temperature.current > 38) {
+      newAlerts.push({ id: 4, type: "Temperature", message: "High fever detected.", severity: "high" });
     }
-    if (metrics.gsr.current > 0.8) {
-      newAlerts.push({ id: 5, type: "Stress", message: "High stress levels detected.", severity: "medium" });
+    if (gsr.current > 3000) {
+        newAlerts.push({ id: 5, type: "Stress", message: "Extreme stress levels detected.", severity: "low" });
     }
+
     setAlerts(newAlerts);
   }, [metrics]);
 
@@ -74,9 +108,15 @@ const Dashboard = () => {
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="flex-1 p-4 md:p-8">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back!</h1>
-          <p className="text-gray-500">Here is your health overview for today.</p>
+        <header className="mb-8 flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Health Overview</h1>
+            <p className="text-gray-500">Real-time vitals monitoring from IoT sensors.</p>
+          </div>
+          <div className="text-right hidden md:block">
+             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Last Update</p>
+             <p className="text-sm font-medium text-gray-600">{new Date().toLocaleTimeString()}</p>
+          </div>
         </header>
 
         {activeTab === "Home" && (
@@ -88,7 +128,7 @@ const Dashboard = () => {
                 targetValue={metrics.steps.target}
                 trendData={metrics.steps.trend}
                 color="#10b981"
-                unit=" steps"
+                unit=""
                 icon={Footprints}
                 chartType="bar"
               />
@@ -111,12 +151,12 @@ const Dashboard = () => {
                 icon={Zap}
               />
               <DailyGoalCard
-                title="Stress (GSR)"
+                title="GSR"
                 currentValue={metrics.gsr.current}
                 targetValue={metrics.gsr.target}
                 trendData={metrics.gsr.trend}
                 color="#f59e0b"
-                unit=" level"
+                unit=""
                 icon={Droplets}
               />
               <DailyGoalCard
@@ -134,12 +174,19 @@ const Dashboard = () => {
               <div className="lg:col-span-2">
                 <TrendChart metricsData={metrics} />
               </div>
-              <div>
+              <div className="space-y-6">
                 <AlertSection alerts={alerts} isNotificationEnabled={isNotificationEnabled} />
                 
-                <div className={`mt-6 p-6 rounded-2xl border-2 transition-all ${metrics.isFallen ? 'bg-red-600 border-red-600 text-white animate-bounce' : 'bg-white border-gray-100 text-gray-400'}`}>
-                   <p className="text-sm font-bold uppercase mb-1">Safety Status</p>
-                   <p className="text-2xl font-black">{metrics.isFallen ? "FALL DETECTED!" : "System Normal"}</p>
+                {/* Visual Fall Indicator */}
+                <div className={`p-6 rounded-2xl border-2 transition-all duration-500 ${
+                  metrics.isFallen 
+                    ? 'bg-red-600 border-red-400 text-white shadow-lg shadow-red-200 animate-pulse' 
+                    : 'bg-white border-gray-100 text-gray-400'
+                }`}>
+                   <p className="text-xs font-bold uppercase mb-1 tracking-tighter">Safety Status</p>
+                   <p className="text-2xl font-black">
+                     {metrics.isFallen ? "FALL DETECTED!" : "SYSTEM NORMAL"}
+                   </p>
                 </div>
               </div>
             </div>
@@ -147,8 +194,9 @@ const Dashboard = () => {
         )}
 
         {activeTab !== "Home" && (
-          <div className="h-64 flex items-center justify-center bg-white rounded-2xl border border-dashed border-gray-200">
-            <p className="text-gray-400">Detailed {activeTab} analytics coming soon...</p>
+          <div className="h-64 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-gray-200">
+            <Activity className="h-10 w-10 text-gray-200 mb-2" />
+            <p className="text-gray-400 font-medium">{activeTab} Analytics Coming Soon</p>
           </div>
         )}
       </main>

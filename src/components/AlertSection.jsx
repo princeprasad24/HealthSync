@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 
 const AlertSection = ({ alerts = [], isNotificationEnabled }) => {
-  // Helper to determine styles based on alert severity
+  
   const getSeverityStyles = (severity) => {
     switch (severity) {
       case "high":

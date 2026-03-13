@@ -34,21 +34,21 @@ const TrendChart = ({ metricsData = {} }) => {
     temperature: true,
   });
 
-  // Safely extract trend arrays from the nested structure
+  
   const stepsTrend = metricsData?.steps?.trend || [];
   const heartRateTrend = metricsData?.heartRate?.trend || [];
   const spo2Trend = metricsData?.spo2?.trend || [];
   const gsrTrend = metricsData?.gsr?.trend || [];
   const tempTrend = metricsData?.temperature?.trend || [];
 
-  // Create labels based on the longest available trend array
+  
   const maxLen = Math.max(
     stepsTrend.length, 
     heartRateTrend.length, 
     spo2Trend.length, 
     gsrTrend.length, 
     tempTrend.length,
-    1 // Fallback to at least 1 label
+    1 
   );
 
   const labels = Array.from({ length: maxLen }, (_, idx) => {

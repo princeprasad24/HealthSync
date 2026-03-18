@@ -11,7 +11,7 @@ import {
   Filler,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { Calendar, Filter } from "lucide-react";
+import { Activity, MousePointer2 } from "lucide-react";
 
 ChartJS.register(
   CategoryScale,
@@ -21,83 +21,93 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend,
-  Filler,
+  Filler
 );
 
 const TrendChart = ({ metricsData = {} }) => {
-  const [timeframe, setTimeframe] = useState("Daily");
   const [activeDatasets, setActiveDatasets] = useState({
     steps: true,
     heartRate: true,
     spo2: true,
     gsr: true,
-    // temperature: true,
+    temperature: true,
   });
 
-  
   const stepsTrend = metricsData?.steps?.trend || [];
   const heartRateTrend = metricsData?.heartRate?.trend || [];
   const spo2Trend = metricsData?.spo2?.trend || [];
   const gsrTrend = metricsData?.gsr?.trend || [];
-  // const tempTrend = metricsData?.temperature?.trend || [];
+  const tempTrend = metricsData?.temperature?.trend || [];
 
-  
   const maxLen = Math.max(
-    stepsTrend.length, 
-    heartRateTrend.length, 
-    spo2Trend.length, 
-    gsrTrend.length, 
-    // tempTrend.length,
-    1 
+    stepsTrend.length,
+    heartRateTrend.length,
+    spo2Trend.length,
+    gsrTrend.length,
+    tempTrend.length,
+    1
   );
 
-  const labels = Array.from({ length: maxLen }, (_, idx) => {
-    if (timeframe === "Daily") return `Hr ${idx + 1}`;
-    if (timeframe === "Weekly") return `Day ${idx + 1}`;
-    return `Week ${idx + 1}`;
-  });
+  const labels = Array.from({ length: maxLen }, (_, idx) => `T-${maxLen - idx}`);
+
+  const createGradient = (ctx, color) => {
+    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    gradient.addColorStop(0, `${color}44`);
+    gradient.addColorStop(1, `${color}00`);
+    return gradient;
+  };
 
   const datasets = [
     {
       label: "Steps",
       data: stepsTrend,
       borderColor: "#10b981",
-      backgroundColor: "rgba(16, 185, 129, 0.1)",
+      backgroundColor: (ctx) => ctx.chart.ctx ? createGradient(ctx.chart.ctx, "#10b981") : "#10b98122",
       fill: true,
       hidden: !activeDatasets.steps,
+      tension: 0.4,
+      pointRadius: 2,
     },
     {
       label: "Heart Rate",
       data: heartRateTrend,
       borderColor: "#ef4444",
-      backgroundColor: "rgba(239, 68, 68, 0.1)",
+      backgroundColor: (ctx) => ctx.chart.ctx ? createGradient(ctx.chart.ctx, "#ef4444") : "#ef444422",
       fill: true,
       hidden: !activeDatasets.heartRate,
+      tension: 0.4,
+      pointRadius: 2,
     },
     {
       label: "SpO2",
       data: spo2Trend,
       borderColor: "#3b82f6",
-      backgroundColor: "rgba(59, 130, 246, 0.1)",
+      backgroundColor: (ctx) => ctx.chart.ctx ? createGradient(ctx.chart.ctx, "#3b82f6") : "#3b82f622",
       fill: true,
       hidden: !activeDatasets.spo2,
+      tension: 0.4,
+      pointRadius: 2,
     },
     {
-      label: "GSR (Stress)",
+      label: "Stress (GSR)",
       data: gsrTrend,
       borderColor: "#f59e0b",
-      backgroundColor: "rgba(245, 158, 11, 0.1)",
+      backgroundColor: (ctx) => ctx.chart.ctx ? createGradient(ctx.chart.ctx, "#f59e0b") : "#f59e0b22",
       fill: true,
       hidden: !activeDatasets.gsr,
+      tension: 0.4,
+      pointRadius: 2,
     },
-    // {
-    //   label: "Temperature",
-    //   data: tempTrend,
-    //   borderColor: "#ec4899",
-    //   backgroundColor: "rgba(236, 72, 153, 0.1)",
-    //   fill: true,
-    //   hidden: !activeDatasets.temperature,
-    // },
+    {
+      label: "Temperature",
+      data: tempTrend,
+      borderColor: "#ec4899",
+      backgroundColor: (ctx) => ctx.chart.ctx ? createGradient(ctx.chart.ctx, "#ec4899") : "#ec489922",
+      fill: true,
+      hidden: !activeDatasets.temperature,
+      tension: 0.4,
+      pointRadius: 2,
+    },
   ];
 
   const chartOptions = {
@@ -108,82 +118,70 @@ const TrendChart = ({ metricsData = {} }) => {
       tooltip: {
         mode: "index",
         intersect: false,
-        backgroundColor: "rgba(255, 255, 255, 0.9)",
-        titleColor: "#1f2937",
-        bodyColor: "#4b5563",
-        borderColor: "#e5e7eb",
+        backgroundColor: "#0f172a",
+        titleColor: "#f8fafc",
+        bodyColor: "#cbd5e1",
+        borderColor: "#334155",
         borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
+        usePointStyle: true,
+        titleFont: { weight: "bold", size: 14 },
       },
     },
     scales: {
       y: {
         beginAtZero: false,
-        grid: { color: "#f3f4f6" },
+        grid: { color: "#334155", drawBorder: false },
+        ticks: { color: "#cbd5e1", font: { weight: "bold" } },
       },
       x: {
         grid: { display: false },
+        ticks: { color: "#cbd5e1", font: { weight: "bold" } },
       },
     },
   };
 
-  const toggleDataset = (key) => {
-    setActiveDatasets((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+  const toggleDataset = (key) => setActiveDatasets((prev) => ({ ...prev, [key]: !prev[key] }));
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+    <div className="bg-[#0f172a] p-8 rounded-2xl shadow-lg border border-[#1e293b]">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h2 className="text-xl font-bold text-gray-800">Health Trends</h2>
-          <p className="text-sm text-gray-500">Visualizing your vitals over time</p>
+          <h2 className="text-2xl font-black text-white tracking-tight">Vitals Analytics</h2>
+         
         </div>
-        
-        {/* <div className="flex bg-gray-100 p-1 rounded-xl">
-          {["Daily", "Weekly", "Monthly"].map((t) => (
-            <button
-              key={t}
-              onClick={() => setTimeframe(t)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                timeframe === t ? "bg-white text-gray-800 shadow-sm" : "text-gray-400 hover:text-gray-600"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
-        </div> */}
+
+       
       </div>
 
-      {/* Dataset Filter Toggles */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="flex items-center gap-2 mr-2 text-gray-400">
-          <Filter size={16} />
-          <span className="text-xs font-bold uppercase tracking-wider">Show:</span>
-        </div>
-        {Object.keys(activeDatasets).map((key) => (
-          <button
-            key={key}
-            onClick={() => toggleDataset(key)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-              activeDatasets[key]
-                ? "bg-gray-800 text-white border-gray-800"
-                : "bg-white text-gray-400 border-gray-200"
-            }`}
-          >
-            <div 
-              className="w-2 h-2 rounded-full" 
-              style={{ backgroundColor: datasets.find(d => d.label.toLowerCase().includes(key.toLowerCase()))?.borderColor }} 
-            />
-            {key.toUpperCase()}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-2 mb-8">
+        {Object.keys(activeDatasets).map((key) => {
+          const dataset = datasets.find((d) => d.label.toLowerCase().includes(key.toLowerCase()));
+          return (
+            <button
+              key={key}
+              onClick={() => toggleDataset(key)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-tighter transition-all ${
+                activeDatasets[key]
+                  ? "bg-[#334155] text-white border-[#334155] shadow-md"
+                  : "bg-[#0f172a] text-slate-400 border-[#334155] hover:border-slate-500"
+              }`}
+            >
+              <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dataset?.borderColor }} />
+              {key}
+            </button>
+          );
+        })}
       </div>
 
       <div className="h-80">
         {maxLen > 0 ? (
           <Line data={{ labels, datasets }} options={chartOptions} />
         ) : (
-          <div className="h-full flex items-center justify-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-            <p className="text-gray-400 text-sm">No trend data available from sensors yet...</p>
+          <div className="h-full flex flex-col items-center justify-center bg-[#1e293b] rounded-2xl border border-dashed border-slate-700">
+            <Activity className="text-slate-600 h-10 w-10 mb-2 animate-pulse" />
+            <p className="text-slate-400 text-xs font-bold uppercase">Awaiting sensor data...</p>
           </div>
         )}
       </div>

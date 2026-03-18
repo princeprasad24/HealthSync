@@ -1,144 +1,137 @@
 import React from "react";
-import { 
-  Bell, 
-  AlertTriangle, 
-  ShieldCheck, 
+import {
+  AlertTriangle,
+  ShieldCheck,
   Activity,
   Zap,
   Droplets,
   Thermometer,
-  X
 } from "lucide-react";
 
 const AlertSection = ({ metrics, thresholds, isNotificationEnabled }) => {
-  
-  // Generate all alerts dynamically
+
   const generateLiveAlerts = () => {
+
     const activeAlerts = [];
     const { heartRate, spo2, temperature, gsr, isFallen } = metrics;
 
-    // --- 1. FALL DETECTION (Highest Priority) ---
+    /* FALL DETECTION */
+
     if (isFallen) {
       activeAlerts.push({
         id: "fall",
         type: "Emergency",
         message: "Fall Detected! Immediate contact recommended.",
         severity: "high",
-        icon: <AlertTriangle className="text-red-600" />
+        icon: <AlertTriangle className="text-red-500" />,
       });
     }
 
+    /* HEART RATE */
+
     if (heartRate.current > 0) {
-    if (heartRate.current > thresholds.hrMax) {
-      activeAlerts.push({ id: "h-hr", type: "Heart Rate", message: `High Pulse (> ${thresholds.hrMax} BPM)`, severity: "high" });
-    } else if (heartRate.current < thresholds.hrMin) {
-      activeAlerts.push({ id: "l-hr", type: "Heart Rate", message: `Low Pulse (< ${thresholds.hrMin} BPM)`, severity: "high" });
-    }
-  }
 
-  if (temperature.current > 0) {
-    if (temperature.current > thresholds.tempMax) {
-      activeAlerts.push({ id: "h-temp", type: "Temperature", message: "Fever Detected", severity: "high" });
-    } else if (temperature.current < thresholds.tempMin) {
-      activeAlerts.push({ id: "l-temp", type: "Temperature", message: "Low Body Temp Detected", severity: "high" });
-    }
-  }
-
-  if (spo2.current > 0 && spo2.current < thresholds.spo2Min) {
-    activeAlerts.push({ id: "l-spo2", type: "Oxygen", message: `Critical SpO2: ${spo2.current}%`, severity: "high" });
-  }
-
-  // GSR: Stress Levels
-  if (gsr.current >= 1500) {
-    activeAlerts.push({ id: "gsr", type: "Stress", message: "High Stress detected", severity: "medium" });
-  }
-
-    // --- 2. HEART RATE ALERTS ---
-    if (heartRate.current > 0) {
       if (heartRate.current > 200) {
         activeAlerts.push({
           id: "hr-crit-high",
           type: "Heart Rate",
           message: "CRITICAL: Dangerously High BPM (>200)!",
           severity: "high",
-          icon: <Activity className="text-red-600" />
+          icon: <Activity className="text-red-500" />,
         });
+
       } else if (heartRate.current > thresholds.hrMax) {
+
         activeAlerts.push({
           id: "hr-high",
           type: "Heart Rate",
-          message: "High Pulse detected.",
+          message: `High Pulse (> ${thresholds.hrMax})`,
           severity: "medium",
-          icon: <Activity />
+          icon: <Activity className="text-orange-400" />,
         });
+
       } else if (heartRate.current < 40) {
+
         activeAlerts.push({
           id: "hr-crit-low",
           type: "Heart Rate",
           message: "CRITICAL: Dangerously Low BPM (<40)!",
           severity: "high",
-          icon: <Activity className="text-blue-600" />
+          icon: <Activity className="text-blue-400" />,
         });
-      } else if (heartRate.current < 55) {
+
+      } else if (heartRate.current < thresholds.hrMin) {
+
         activeAlerts.push({
           id: "hr-low",
           type: "Heart Rate",
-          message: "Low Pulse (Bradycardia) detected.",
+          message: `Low Pulse (< ${thresholds.hrMin})`,
           severity: "medium",
-          icon: <Activity />
+          icon: <Activity className="text-blue-300" />,
         });
       }
     }
 
-    // --- 3. TEMPERATURE ALERTS ---
+    /* TEMPERATURE */
+
     if (temperature.current > 0) {
+
       if (temperature.current > thresholds.tempMax) {
         activeAlerts.push({
           id: "temp-high",
           type: "Temperature",
-          message: "Fever detected (High Temp).",
+          message: "Fever detected.",
           severity: "high",
-          icon: <Thermometer className="text-red-600" />
+          icon: <Thermometer className="text-red-500" />,
         });
-      } else if (temperature.current < 35.0) {
+
+      } else if (temperature.current < thresholds.tempMin) {
+
         activeAlerts.push({
           id: "temp-low",
           type: "Temperature",
-          message: "CRITICAL: Low Body Temp (Hypothermia)!",
+          message: "Low Body Temperature.",
           severity: "high",
-          icon: <Thermometer className="text-blue-600" />
+          icon: <Thermometer className="text-blue-400" />,
         });
       }
     }
 
-    // --- 4. SPO2 ALERTS ---
+    /* SPO2 */
+
     if (spo2.current > 0 && spo2.current < thresholds.spo2Min) {
+
       const severity = spo2.current < 85 ? "high" : "medium";
+
       activeAlerts.push({
         id: "spo2-low",
         type: "Oxygen",
-        message: `Low SpO2 detected: ${spo2.current}%.`,
+        message: `Low SpO2: ${spo2.current}%`,
         severity,
-        icon: <Zap />
+        icon: <Zap className="text-cyan-400" />,
       });
     }
 
-    // --- 5. GSR STRESS ALERTS ---
+    /* GSR STRESS */
+
     if (gsr.current >= 1500) {
+
       activeAlerts.push({
         id: "gsr-high",
-        type: "Stress Level",
-        message: "High stress / sweating detected.",
+        type: "Stress",
+        message: "High stress detected.",
         severity: "high",
-        icon: <Droplets className="text-orange-600" />
+        icon: <Droplets className="text-orange-400" />,
       });
-    } else if (gsr.current >= 500 && gsr.current < 1500) {
+
+    } else if (gsr.current >= 500) {
+
       activeAlerts.push({
         id: "gsr-med",
-        type: "Stress Level",
+        type: "Stress",
         message: "Slight stress detected.",
         severity: "medium",
-        icon: <Droplets className="text-yellow-600" />
+        icon: <Droplets className="text-yellow-400" />,
       });
     }
 
@@ -148,43 +141,102 @@ const AlertSection = ({ metrics, thresholds, isNotificationEnabled }) => {
   const currentAlerts = generateLiveAlerts();
 
   const getSeverityStyles = (severity) => {
+
     switch (severity) {
-      case "high": return "bg-red-50 text-red-700 border-red-200 ring-1 ring-red-500/20";
-      case "medium": return "bg-yellow-50 text-yellow-700 border-yellow-200 ring-1 ring-yellow-500/20";
-      default: return "bg-blue-50 text-blue-700 border-blue-200 ring-1 ring-blue-500/20";
+
+      case "high":
+        return "bg-red-500/10 text-red-400 border-red-500/30";
+
+      case "medium":
+        return "bg-yellow-500/10 text-yellow-300 border-yellow-500/30";
+
+      default:
+        return "bg-blue-500/10 text-blue-300 border-blue-500/30";
     }
   };
 
   return (
-    <div className="bg-white shadow-sm border border-gray-100 rounded-3xl p-6">
+
+    <div className="bg-[#0f172a] shadow border border-[#1e293b] rounded-2xl p-6">
+
+      {/* HEADER */}
+
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-gray-800">Health Alerts</h2>
-        <div className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase ${isNotificationEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-400"}`}>
+
+        <h2 className="text-xl font-bold text-slate-200">
+          Health Alerts
+        </h2>
+
+        <div
+          className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase
+          ${
+            isNotificationEnabled
+              ? "bg-green-500/20 text-green-400"
+              : "bg-slate-700 text-slate-400"
+          }`}
+        >
           {isNotificationEnabled ? "Live" : "Muted"}
         </div>
+
       </div>
 
+      {/* EMPTY STATE */}
+
       {currentAlerts.length === 0 ? (
-        <div className="flex flex-col items-center py-8 bg-gray-50 rounded-2xl border border-dashed">
-          <ShieldCheck className="h-8 w-8 text-green-500 mb-2" />
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">System Clear</p>
+
+        <div className="flex flex-col items-center py-8 bg-[#020617] rounded-xl border border-dashed border-[#1e293b]">
+
+          <ShieldCheck className="h-8 w-8 text-green-400 mb-2" />
+
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+            System Clear
+          </p>
+
         </div>
+
       ) : (
+
         <div className="space-y-3">
+
           {currentAlerts.map((alert) => (
-            <div key={alert.id} className={`flex items-start gap-4 p-4 border-l-4 rounded-2xl transition-all ${getSeverityStyles(alert.severity)}`}>
+
+            <div
+              key={alert.id}
+              className={`flex items-start gap-4 p-4 border-l-4 rounded-xl transition-all ${getSeverityStyles(
+                alert.severity
+              )}`}
+            >
+
               <div className="mt-1">{alert.icon}</div>
+
               <div className="flex-1">
+
                 <div className="flex justify-between">
-                  <p className="font-black text-[10px] uppercase tracking-wider">{alert.type}</p>
-                  <span className="text-[8px] font-bold uppercase opacity-50">{alert.severity}</span>
+
+                  <p className="font-black text-[10px] uppercase tracking-wider">
+                    {alert.type}
+                  </p>
+
+                  <span className="text-[8px] font-bold uppercase opacity-60">
+                    {alert.severity}
+                  </span>
+
                 </div>
-                <p className="text-xs font-semibold mt-0.5 leading-tight">{alert.message}</p>
+
+                <p className="text-xs font-semibold mt-1 leading-tight">
+                  {alert.message}
+                </p>
+
               </div>
+
             </div>
+
           ))}
+
         </div>
+
       )}
+
     </div>
   );
 };

@@ -11,7 +11,6 @@ import {
   Filler,
 } from "chart.js";
 
-
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -26,16 +25,18 @@ const DailyGoalCard = ({
   title,
   currentValue,
   targetValue,
-  trendData = [], 
+  trendData = [],
   color,
   unit,
   icon: Icon,
   chartType = "line",
 }) => {
-  
-  const percentage = targetValue > 0 ? Math.min((currentValue / targetValue) * 100, 100) : 0;
 
-  
+  const percentage =
+    targetValue > 0
+      ? Math.min((currentValue / targetValue) * 100, 100)
+      : 0;
+
   const chartData = {
     labels: trendData.map((_, idx) => idx + 1),
     datasets: [
@@ -65,35 +66,52 @@ const DailyGoalCard = ({
   };
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-      {/* Header Area */}
+    <div className="bg-[#0f172a] p-6 rounded-2xl shadow-lg border border-[#1e293b] hover:border-slate-600 transition-all">
+
+      {/* HEADER */}
       <div className="flex justify-between items-start mb-4">
+
         <div className="flex items-center gap-3">
+
           {Icon && (
-            <div 
-              className="p-2.5 rounded-xl" 
-              style={{ backgroundColor: `${color}15`, color: color }}
+            <div
+              className="p-2.5 rounded-xl"
+              style={{
+                backgroundColor: `${color}22`,
+                color: color,
+              }}
             >
               <Icon size={20} />
             </div>
           )}
-          <h3 className="text-gray-500 font-semibold text-sm">{title}</h3>
+
+          <h3 className="text-slate-400 font-semibold text-sm">
+            {title}
+          </h3>
+
         </div>
-        <span className="text-gray-400 text-xs font-medium">
+
+        <span className="text-slate-500 text-xs font-medium">
           Goal: {targetValue}{unit}
         </span>
+
       </div>
 
-      {/* Main Value Display */}
+      {/* VALUE */}
       <div className="mb-4">
-        <p className="text-2xl font-bold text-gray-800">
+
+        <p className="text-2xl font-bold text-slate-200">
           {currentValue}
-          <span className="text-sm font-normal text-gray-400 ml-1">{unit}</span>
+          <span className="text-sm font-normal text-slate-500 ml-1">
+            {unit}
+          </span>
         </p>
+
       </div>
 
-      {/* Mini Sparkline Chart */}
+      {/* MINI CHART */}
       <div className="w-full h-16 mb-4">
+
         {trendData.length > 0 ? (
           chartType === "line" ? (
             <Line data={chartData} options={chartOptions} />
@@ -101,30 +119,42 @@ const DailyGoalCard = ({
             <Bar data={chartData} options={chartOptions} />
           )
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-gray-50 rounded-lg">
-            <span className="text-[10px] text-gray-300 uppercase font-bold tracking-widest">No Trend Data</span>
+          <div className="h-full w-full flex items-center justify-center bg-[#020617] rounded-lg">
+            <span className="text-[10px] text-slate-600 uppercase font-bold tracking-widest">
+              No Trend Data
+            </span>
           </div>
         )}
+
       </div>
 
-      {/* Progress Bar Area */}
+      {/* PROGRESS BAR */}
       <div>
+
         <div className="flex justify-between items-end mb-1">
-          <span className="text-xs font-bold" style={{ color: color }}>
+          <span
+            className="text-xs font-bold"
+            style={{ color: color }}
+          >
             {percentage.toFixed(0)}%
           </span>
         </div>
-        <div className="w-full bg-gray-100 rounded-full h-2">
+
+        <div className="w-full bg-[#1e293b] rounded-full h-2">
+
           <div
             className="h-full rounded-full transition-all duration-1000"
-            style={{ 
-              width: `${percentage}%`, 
+            style={{
+              width: `${percentage}%`,
               backgroundColor: color,
-              boxShadow: `0 0 10px ${color}44` 
+              boxShadow: `0 0 12px ${color}55`,
             }}
           />
+
         </div>
+
       </div>
+
     </div>
   );
 };

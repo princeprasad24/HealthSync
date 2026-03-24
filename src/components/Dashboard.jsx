@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "./sideBar";
 import TrendChart from "./TrendChart";
 import AlertSection from "./AlertSection";
@@ -9,7 +9,7 @@ import OxygenWave from "./OxygenWave";
 import StressRadar from "./StressRadar";
 
 import { database } from "../firebase/firebase";
-import { ref, onValue } from "firebase/database";
+import { ref, onValue, push, serverTimestamp } from "firebase/database";
 
 import { Flame, Clock } from "lucide-react";
 import { Cog6ToothIcon } from "@heroicons/react/24/outline";
@@ -18,6 +18,8 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState("Home");
   const [isNotificationEnabled, setNotificationEnabled] = useState(true);
   const [lastUpdate, setLastUpdate] = useState("");
+
+  const alertsStates = useRef({});
 
   const [thresholds, setThresholds] = useState({
     hrMax: 120,
@@ -42,8 +44,6 @@ const Dashboard = () => {
     return newTrend.slice(-20);
   };
 
-  /* ---------------- FETCH THRESHOLDS ---------------- */
-
   useEffect(() => {
     const thresholdRef = ref(database, "thresholds");
 
@@ -58,8 +58,6 @@ const Dashboard = () => {
 
     return () => unsubscribe();
   }, []);
-
-  /* ---------------- FETCH SENSOR DATA ---------------- */
 
   useEffect(() => {
     const rootRef = ref(database, "/");
@@ -149,6 +147,112 @@ const Dashboard = () => {
     (metrics.steps.current / metrics.steps.target) * 100,
     100,
   );
+
+  useEffect(() => {
+    const { heartRate, spo2, temperature, gsr, isFallen } = metrics;
+    const alertsRef = ref(database, "alerts");
+
+    const triggerAlert = (type, message, severity) => {
+      if (alertsStates.current[type]) return;
+
+      const newAlert = {
+        type,
+        message,
+        severity,
+        timestamp: serverTimestamp(),
+        isRead: false,
+      };
+
+      push(alertsRef, newAlert);
+      alertsStates.current[type] = true;
+    };
+
+    const resetAlert = (type) => {
+      alertsStates.current[type] = false;
+    };
+
+    if (heartRate.current > 0) {
+      if (heartRate.current > thresholds.hrMax) {
+        triggerAlert(
+          "Heart Rate",
+          `High Pulse: ${heartRate.current} BPM (Limit: ${thresholds.hrMax})`,
+          "high",
+        );
+      } else if (heartRate.current < thresholds.hrMin) {
+        triggerAlert(
+          "Heart Rate",
+          `Low Pulse: ${heartRate.current} BPM (Limit: ${thresholds.hrMin})`,
+          "high",
+        );
+      } else {
+        resetAlert("Heart Rate");
+      }
+
+      if (spo2.current > 0 && spo2.current < thresholds.spo2Min) {
+        triggerAlert(
+          "Oxygen",
+          `Low SpO2: ${spo2.current}% (Min: ${thresholds.spo2Min}%)`,
+          "high",
+        );
+      } else if (spo2.current >= thresholds.spo2Min) {
+        resetAlert("Oxygen");
+      }
+
+      if (temperature.current > 0) {
+    if (temperature.current > thresholds.tempMax) {
+      triggerAlert("Temperature", `Fever: ${temperature.current}°C (Max: ${thresholds.tempMax}°C)`, "high");
+    } else if (temperature.current < thresholds.tempMin) {
+      triggerAlert("Temperature", `Hypothermia: ${temperature.current}°C (Min: ${thresholds.tempMin}°C)`, "high");
+    } else {
+      resetAlert("Temperature");
+    }
+  }
+
+      if (gsr.current >= thresholds.gsrMax) {
+        triggerAlert(
+          "Stress",
+          `High GSR: ${gsr.current} (Limit: ${thresholds.gsrMax})`,
+          "medium",
+        );
+      } else if (gsr.current < thresholds.gsrMax) {
+        resetAlert("Stress");
+      }
+
+      if (isFallen) {
+        triggerAlert(
+          "Emergency",
+          "Fall detection protocol triggered!",
+          "high",
+        );
+      } else {
+        resetAlert("Emergency");
+      }
+    }
+  });
+
+  useEffect(() => {
+    const alertsRef = ref(database, "alerts");
+
+    const unsubscribe = onValue(alertsRef, (snapshot) => {
+      if (!snapshot.exists() || !isNotificationEnabled) return;
+
+      const allAlerts = snapshot.val();
+      const alertKeys = Object.keys(allAlerts);
+      const latestKey = alertKeys[alertKeys.length - 1];
+      const latestAlert = allAlerts[latestKey];
+
+      if (!latestAlert.isRead && latestAlert.timestamp > Date.now() - 5000) {
+        if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(`Health Alert: ${latestAlert.type}`, {
+            body: latestAlert.message,
+            icon: "/alert-icon.png",
+          });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [isNotificationEnabled]);
 
   return (
     <div className="min-h-screen bg-[#020617] flex font-sans text-slate-200">
@@ -301,7 +405,7 @@ const Dashboard = () => {
                 className="flex items-center gap-3 p-3 cursor-pointer rounded-lg w-full text-slate-400 hover:bg-[#020617] hover:text-slate-200 transition-all"
               >
                 <Cog6ToothIcon className="h-5 w-5" />
-                 
+
                 <span>Change Thresholds</span>
               </button>
             </div>
@@ -309,7 +413,10 @@ const Dashboard = () => {
         )}
 
         {activeTab === "Settings" && (
-          <SettingsSection currentThresholds={thresholds} goHome={() => setActiveTab("Home")} />
+          <SettingsSection
+            currentThresholds={thresholds}
+            goHome={() => setActiveTab("Home")}
+          />
         )}
       </main>
     </div>

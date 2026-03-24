@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { database } from "../firebase/firebase";
+import { ref, onValue, limitToLast, query, remove } from "firebase/database";
 import {
   AlertTriangle,
   ShieldCheck,
@@ -6,237 +8,121 @@ import {
   Zap,
   Droplets,
   Thermometer,
+  Clock,
+  Trash2
 } from "lucide-react";
 
-const AlertSection = ({ metrics, thresholds, isNotificationEnabled }) => {
+const AlertSection = ({ isNotificationEnabled }) => {
+  const [dbAlerts, setDbAlerts] = useState([]);
 
-  const generateLiveAlerts = () => {
+  useEffect(() => {
+    // Queries the last 5 alerts from the official Firebase node
+    const alertsRef = query(ref(database, "alerts"), limitToLast(5));
 
-    const activeAlerts = [];
-    const { heartRate, spo2, temperature, gsr, isFallen } = metrics;
-
-    /* FALL DETECTION */
-
-    if (isFallen) {
-      activeAlerts.push({
-        id: "fall",
-        type: "Emergency",
-        message: "Fall Detected! Immediate contact recommended.",
-        severity: "high",
-        icon: <AlertTriangle className="text-red-500" />,
-      });
-    }
-
-    /* HEART RATE */
-
-    if (heartRate.current > 0) {
-
-      if (heartRate.current > 200) {
-        activeAlerts.push({
-          id: "hr-crit-high",
-          type: "Heart Rate",
-          message: "CRITICAL: Dangerously High BPM (>200)!",
-          severity: "high",
-          icon: <Activity className="text-red-500" />,
-        });
-
-      } else if (heartRate.current > thresholds.hrMax) {
-
-        activeAlerts.push({
-          id: "hr-high",
-          type: "Heart Rate",
-          message: `High Pulse (> ${thresholds.hrMax})`,
-          severity: "medium",
-          icon: <Activity className="text-orange-400" />,
-        });
-
-      } else if (heartRate.current < 40) {
-
-        activeAlerts.push({
-          id: "hr-crit-low",
-          type: "Heart Rate",
-          message: "CRITICAL: Dangerously Low BPM (<40)!",
-          severity: "high",
-          icon: <Activity className="text-blue-400" />,
-        });
-
-      } else if (heartRate.current < thresholds.hrMin) {
-
-        activeAlerts.push({
-          id: "hr-low",
-          type: "Heart Rate",
-          message: `Low Pulse (< ${thresholds.hrMin})`,
-          severity: "medium",
-          icon: <Activity className="text-blue-300" />,
-        });
+    const unsubscribe = onValue(alertsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        // Convert Firebase object to an array and reverse for newest-first display
+        const sortedAlerts = Object.entries(data)
+          .map(([id, val]) => ({ id, ...val }))
+          .sort((a, b) => b.timestamp - a.timestamp); 
+        setDbAlerts(sortedAlerts);
+      } else {
+        setDbAlerts([]);
       }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Helper to clear alert history from Firebase
+  const clearAlerts = () => {
+    if (window.confirm("Are you sure you want to clear all alert history?")) {
+      remove(ref(database, "alerts"))
+        .then(() => setDbAlerts([]))
+        .catch((err) => console.error("Clear failed:", err));
     }
-
-    /* TEMPERATURE */
-
-    if (temperature.current > 0) {
-
-      if (temperature.current > thresholds.tempMax) {
-        activeAlerts.push({
-          id: "temp-high",
-          type: "Temperature",
-          message: "Fever detected.",
-          severity: "high",
-          icon: <Thermometer className="text-red-500" />,
-        });
-
-      } else if (temperature.current < thresholds.tempMin) {
-
-        activeAlerts.push({
-          id: "temp-low",
-          type: "Temperature",
-          message: "Low Body Temperature.",
-          severity: "high",
-          icon: <Thermometer className="text-blue-400" />,
-        });
-      }
-    }
-
-    /* SPO2 */
-
-    if (spo2.current > 0 && spo2.current < thresholds.spo2Min) {
-
-      const severity = spo2.current < 85 ? "high" : "medium";
-
-      activeAlerts.push({
-        id: "spo2-low",
-        type: "Oxygen",
-        message: `Low SpO2: ${spo2.current}%`,
-        severity,
-        icon: <Zap className="text-cyan-400" />,
-      });
-    }
-
-    /* GSR STRESS */
-
-    if (gsr.current >= 1500) {
-
-      activeAlerts.push({
-        id: "gsr-high",
-        type: "Stress",
-        message: "High stress detected.",
-        severity: "high",
-        icon: <Droplets className="text-orange-400" />,
-      });
-
-    } else if (gsr.current >= 500) {
-
-      activeAlerts.push({
-        id: "gsr-med",
-        type: "Stress",
-        message: "Slight stress detected.",
-        severity: "medium",
-        icon: <Droplets className="text-yellow-400" />,
-      });
-    }
-
-    return activeAlerts;
   };
 
-  const currentAlerts = generateLiveAlerts();
+  const getIcon = (type) => {
+    switch (type) {
+      case "Heart Rate": return <Activity size={18} />;
+      case "Oxygen": return <Zap size={18} />;
+      case "Temperature": return <Thermometer size={18} />;
+      case "Stress": return <Droplets size={18} />;
+      case "Emergency": return <AlertTriangle size={18} />;
+      default: return <Activity size={18} />;
+    }
+  };
 
   const getSeverityStyles = (severity) => {
-
-    switch (severity) {
-
-      case "high":
-        return "bg-red-500/10 text-red-400 border-red-500/30";
-
-      case "medium":
-        return "bg-yellow-500/10 text-yellow-300 border-yellow-500/30";
-
-      default:
-        return "bg-blue-500/10 text-blue-300 border-blue-500/30";
-    }
+    return severity === "high" 
+      ? "bg-red-500/10 text-red-400 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]" 
+      : "bg-yellow-500/10 text-yellow-400 border-yellow-500/20";
   };
 
   return (
-
-    <div className="bg-[#0f172a] shadow border border-[#1e293b] rounded-2xl p-6">
-
-      {/* HEADER */}
-
-      <div className="flex justify-between items-center mb-6">
-
-        <h2 className="text-xl font-bold text-slate-200">
-          Health Alerts
-        </h2>
-
-        <div
-          className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase
-          ${
-            isNotificationEnabled
-              ? "bg-green-500/20 text-green-400"
-              : "bg-slate-700 text-slate-400"
-          }`}
-        >
-          {isNotificationEnabled ? "Live" : "Muted"}
+    <div className="bg-[#0f172a] shadow-2xl border border-slate-800 rounded-[2.5rem] p-8">
+      {/* Header Area */}
+      <div className="flex justify-between items-start mb-8">
+        <div>
+          <h2 className="text-xl font-black text-white tracking-tight leading-none">System Alerts</h2>
+          <div className="flex items-center gap-2 mt-2">
+             <div className="h-1.5 w-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
+             <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em]">Live Database Feed</p>
+          </div>
         </div>
-
+        
+        <button 
+          onClick={clearAlerts}
+          className="p-2 text-slate-600 hover:text-red-400 hover:bg-red-400/10 rounded-xl transition-all"
+          title="Clear History"
+        >
+          <Trash2 size={16} />
+        </button>
       </div>
 
-      {/* EMPTY STATE */}
-
-      {currentAlerts.length === 0 ? (
-
-        <div className="flex flex-col items-center py-8 bg-[#020617] rounded-xl border border-dashed border-[#1e293b]">
-
-          <ShieldCheck className="h-8 w-8 text-green-400 mb-2" />
-
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-            System Clear
-          </p>
-
+      {/* Main Alerts List */}
+      {dbAlerts.length === 0 ? (
+        <div className="flex flex-col items-center py-12 bg-slate-950/40 rounded-[2rem] border border-dashed border-slate-800/50">
+          <ShieldCheck className="h-12 w-12 text-emerald-500/20 mb-3" />
+          <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Environment Secure</p>
         </div>
-
       ) : (
-
-        <div className="space-y-3">
-
-          {currentAlerts.map((alert) => (
-
+        <div className="space-y-4">
+          {dbAlerts.map((alert) => (
             <div
               key={alert.id}
-              className={`flex items-start gap-4 p-4 border-l-4 rounded-xl transition-all ${getSeverityStyles(
-                alert.severity
-              )}`}
+              className={`flex items-start gap-4 p-5 border rounded-[1.5rem] transition-all duration-500 animate-in fade-in slide-in-from-bottom-2 ${getSeverityStyles(alert.severity)}`}
             >
-
-              <div className="mt-1">{alert.icon}</div>
-
+              <div className="mt-1 p-2 bg-black/20 rounded-xl">
+                {getIcon(alert.type)}
+              </div>
+              
               <div className="flex-1">
-
-                <div className="flex justify-between">
-
-                  <p className="font-black text-[10px] uppercase tracking-wider">
-                    {alert.type}
-                  </p>
-
-                  <span className="text-[8px] font-bold uppercase opacity-60">
-                    {alert.severity}
-                  </span>
-
+                <div className="flex justify-between items-center mb-1">
+                  <p className="font-black text-[10px] uppercase tracking-wider">{alert.type}</p>
+                  <div className="flex items-center gap-1.5 text-slate-500 font-bold">
+                    <Clock size={10} />
+                    <span className="text-[9px]">
+                      {alert.timestamp ? new Date(alert.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Now'}
+                    </span>
+                  </div>
                 </div>
-
-                <p className="text-xs font-semibold mt-1 leading-tight">
+                <p className="text-xs font-semibold leading-relaxed opacity-90">
                   {alert.message}
                 </p>
-
               </div>
-
             </div>
-
           ))}
-
+          
+          <div className="pt-4 text-center">
+             <p className="text-[8px] font-black text-slate-700 uppercase tracking-[0.3em]">
+               End of Recent Logs
+             </p>
+          </div>
         </div>
-
       )}
-
     </div>
   );
 };

@@ -44,6 +44,8 @@ const Dashboard = () => {
     return newTrend.slice(-20);
   };
 
+  console.log(updateTrend)
+
   useEffect(() => {
     const thresholdRef = ref(database, "thresholds");
 

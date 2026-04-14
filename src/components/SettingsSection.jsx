@@ -211,7 +211,7 @@ const SettingsSection = ({ currentThresholds , goHome }) => {
           <input
             type="range"
             min="500"
-            max="2000"
+            max="4000"
             value={values.gsrMax}
             onChange={(e) =>
               setValues({ ...values, gsrMax: parseInt(e.target.value) })

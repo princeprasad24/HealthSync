@@ -122,7 +122,7 @@ const SettingsSection = ({ currentThresholds }) => {
           <input
             type="range"
             min="500"
-            max="2000"
+            max="4000"
             value={values.gsrMax}
             onChange={(e) => setValues({...values, gsrMax: parseInt(e.target.value)})}
             className="w-full accent-yellow-500 mb-4"

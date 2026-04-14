@@ -31,7 +31,7 @@ const TrendChart = ({ metricsData = {} }) => {
     heartRate: true,
     spo2: true,
     gsr: true,
-    // temperature: true,
+    temperature: true,
   });
 
   
@@ -39,7 +39,7 @@ const TrendChart = ({ metricsData = {} }) => {
   const heartRateTrend = metricsData?.heartRate?.trend || [];
   const spo2Trend = metricsData?.spo2?.trend || [];
   const gsrTrend = metricsData?.gsr?.trend || [];
-  // const tempTrend = metricsData?.temperature?.trend || [];
+  const tempTrend = metricsData?.temperature?.trend || [];
 
   
   const maxLen = Math.max(
@@ -47,7 +47,7 @@ const TrendChart = ({ metricsData = {} }) => {
     heartRateTrend.length, 
     spo2Trend.length, 
     gsrTrend.length, 
-    // tempTrend.length,
+    tempTrend.length,
     1 
   );
 
@@ -90,14 +90,14 @@ const TrendChart = ({ metricsData = {} }) => {
       fill: true,
       hidden: !activeDatasets.gsr,
     },
-    // {
-    //   label: "Temperature",
-    //   data: tempTrend,
-    //   borderColor: "#ec4899",
-    //   backgroundColor: "rgba(236, 72, 153, 0.1)",
-    //   fill: true,
-    //   hidden: !activeDatasets.temperature,
-    // },
+    {
+      label: "Temperature",
+      data: tempTrend,
+      borderColor: "#ec4899",
+      backgroundColor: "rgba(236, 72, 153, 0.1)",
+      fill: true,
+      hidden: !activeDatasets.temperature,
+    },
   ];
 
   const chartOptions = {

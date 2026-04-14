@@ -42,6 +42,8 @@ const Dashboard = () => {
     isFallen: false
   });
 
+
+
  
 
   const updateTrend = (trendArray, newValue) => {
@@ -233,8 +235,8 @@ const Dashboard = () => {
                 color="#f59e0b"
                 icon={Droplets}
               />
-
-              {/* <DailyGoalCard
+{/* ............... */}
+              <DailyGoalCard
                 title="Temp"
                 currentValue={metrics.temperature.current}
                 targetValue={thresholds.tempMax}
@@ -242,7 +244,7 @@ const Dashboard = () => {
                 color="#ec4899"
                 icon={Thermometer}
                 unit="°C"
-              /> */}
+              />
 
             </section>
 
@@ -268,7 +270,7 @@ const Dashboard = () => {
 
                 {/* Fall Detection Indicator */}
 
-                <div
+                {/* <div
                   className={`p-6 rounded-2xl border-2 transition-all duration-500 ${
                     metrics.isFallen
                       ? "bg-red-600 border-red-400 text-white animate-pulse"
@@ -286,7 +288,7 @@ const Dashboard = () => {
                       : "SYSTEM NORMAL"}
                   </p>
 
-                </div>
+                </div> */}
 
               </div>
 

@@ -132,7 +132,7 @@ const AlertSection = ({ metrics, thresholds, isNotificationEnabled }) => {
         severity: "high",
         icon: <Droplets className="text-orange-600" />
       });
-    } else if (gsr.current >= 500 && gsr.current < 1500) {
+    } else if (gsr.current >= 1200 && gsr.current < 1500) {
       activeAlerts.push({
         id: "gsr-med",
         type: "Stress Level",
